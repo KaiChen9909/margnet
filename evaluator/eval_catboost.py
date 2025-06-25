@@ -4,13 +4,13 @@ import sys
 target_path="./"
 sys.path.append(target_path)
 
-from TabDDPM.data.data_utils import *
-from TabDDPM.data.dataset import *
+from evaluator.data.data_utils import *
+from evaluator.data.dataset import *
 from sklearn.utils import shuffle
 import random 
 from pathlib import Path
 from pprint import pprint
-from TabDDPM.data.metrics import MetricsReport
+from evaluator.data.metrics import MetricsReport
 from catboost import CatBoostClassifier, CatBoostRegressor
 from sklearn.metrics import classification_report, r2_score
 
@@ -24,7 +24,8 @@ def train_catboost(
     params = None,
     change_val = True,
     device = None, # dummy
-    model_step = 'finetune'
+    model_step = 'finetune',
+    test_data = 'test'
 ):
     random.seed(seed)
     if eval_type != "real":
@@ -78,7 +79,11 @@ def train_catboost(
 
     if not change_val:
         X_num_val, X_cat_val, y_val = read_pure_data(data_path, 'val' if model_step=='finetune' else 'preval')
-    X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test' if model_step=='finetune' else 'pretest')
+    
+    if test_data == 'real':
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'train')
+    else:
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test')
 
     D = Dataset(
         {'train': X_num, 'val': X_num_val, 'test': X_num_test} if X_num is not None else None,

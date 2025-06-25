@@ -7,9 +7,9 @@ sys.path.append(target_path)
 
 from sklearn.utils import shuffle
 from pathlib import Path
-from TabDDPM.data.data_utils import *
-from TabDDPM.data.dataset import * 
-from TabDDPM.data.metrics import * 
+from evaluator.data.data_utils import *
+from evaluator.data.dataset import * 
+from evaluator.data.metrics import * 
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, Ridge
@@ -27,7 +27,8 @@ def train_simple(
     change_val = False,
     params = None, # dummy
     device = None, # dummy
-    model_step = 'finetune'
+    model_step = 'finetune',
+    test_data = 'test'
 ):
     np.random.seed(seed)
     if eval_type != "real":
@@ -75,7 +76,11 @@ def train_simple(
 
     if not change_val:
         X_num_val, X_cat_val, y_val = read_pure_data(data_path, 'val' if model_step=='finetune' else 'preval')
-    X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test' if model_step=='finetune' else 'pretest')
+    
+    if test_data == 'real':
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'train')
+    else:
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test')
 
     D = Dataset(
         {'train': X_num, 'val': X_num_val, 'test': X_num_test} if X_num is not None else None,

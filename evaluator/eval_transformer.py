@@ -7,11 +7,11 @@ sys.path.append(target_path)
 
 from sklearn.utils import shuffle
 import random
-from TabDDPM.data.data_utils import *
-from TabDDPM.data.dataset import * 
-from TabDDPM.data.metrics import * 
+from evaluator.data.data_utils import *
+from evaluator.data.dataset import * 
+from evaluator.data.metrics import * 
 from pathlib import Path
-from TabDDPM.model.modules import TabTransformer
+from evaluator.util import TabTransformer
 from skorch.regressor import NeuralNetRegressor
 from skorch.classifier import NeuralNetClassifier
 from skorch.dataset import Dataset as SkDataset
@@ -32,7 +32,8 @@ def train_transformer(
     seed = 0,
     device = "cuda:0",
     model_step = 'finetune',
-    model_name = None
+    model_name = None,
+    test_data = 'test'
 ):
     random.seed(seed)
     synthetic_data_path = os.path.join(parent_dir) if parent_dir is not None else None
@@ -75,7 +76,11 @@ def train_transformer(
 
     if not change_val:
         X_num_val, X_cat_val, y_val = read_pure_data(data_path, 'val')
-    X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test')
+    
+    if test_data == 'real':
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'train')
+    else:
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test')
 
     D = Dataset(
         {'train': X_num, 'val': X_num_val, 'test': X_num_test} if X_num is not None else None,

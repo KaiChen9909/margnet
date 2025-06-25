@@ -8,8 +8,8 @@ import shutil
 import time
 from pathlib import Path
 from copy import deepcopy
-from TabDDPM.data.data_utils import * 
-from TabDDPM.data.metrics import * 
+from evaluator.data.data_utils import * 
+from evaluator.data.metrics import * 
 from evaluator.eval_catboost import train_catboost
 from evaluator.eval_mlp import train_mlp
 from evaluator.eval_transformer import train_transformer
@@ -19,7 +19,7 @@ from evaluator.eval_query import make_query
 from evaluator.eval_sample import eval_sampler
 
 
-def prepare_report(model_type, temp_config, seed):
+def prepare_report(model_type, temp_config, seed, test_data='test'):
     T_dict = {
         'seed': 0,
         'normalization': "quantile",
@@ -39,7 +39,8 @@ def prepare_report(model_type, temp_config, seed):
             eval_type='synthetic',
             T_dict=T_dict,
             seed=seed,
-            change_val=False #False
+            change_val=False,
+            test_data = test_data
         )
     
     elif model_type == "mlp":
@@ -51,7 +52,8 @@ def prepare_report(model_type, temp_config, seed):
             eval_type='synthetic',
             T_dict=T_dict,
             seed=seed,
-            change_val=False #False
+            change_val=False,
+            test_data = test_data
         )
 
     elif model_type == "transformer":
@@ -63,7 +65,8 @@ def prepare_report(model_type, temp_config, seed):
             eval_type='synthetic',
             T_dict=T_dict,
             seed=seed,
-            change_val=False #False
+            change_val=False,
+            test_data = test_data
         )
     
     else:
@@ -76,7 +79,8 @@ def prepare_report(model_type, temp_config, seed):
             model_name=model_type,
             T_dict=T_dict,
             seed=seed,
-            change_val=False #False
+            change_val=False,
+            test_data = test_data
         ) 
     
     return metric_report
@@ -96,13 +100,8 @@ def eval_seeds(
     n_datasets = 5,
     device='cuda:0',
     time_record=None,
-    **kwargs, #these are some necessary params for baselines
-    # merf_dict = None,
-    # privsyn_method = None,
-    # privsyn_postprocess = None,
-    # aim_generator = None,
-    # aim_dict = None,
-    # llm_generator = None
+    test_data = 'test',
+    **kwargs, 
 ):
     parent_dir = Path(raw_config["parent_dir"])
 
@@ -114,7 +113,7 @@ def eval_seeds(
     # initialize metrics dict
     metrics_seeds_report = {
         'catboost': SeedsMetricsReport(), 
-        'mlp': SeedsMetricsReport(), 
+        # 'mlp': SeedsMetricsReport(), 
         'rf': SeedsMetricsReport(),
         'xgb': SeedsMetricsReport()
     }
@@ -124,7 +123,7 @@ def eval_seeds(
     # whether these eval model is supported
     eval_support = {
         'catboost': os.path.exists(f'eval_models/catboost/{ds}_cv.json'), 
-        'mlp': os.path.exists(f'eval_models/mlp/{ds}_cv.json'), 
+        # 'mlp': os.path.exists(f'eval_models/mlp/{ds}_cv.json'), 
         'rf': os.path.exists(f'eval_models/rf/{ds}_cv.json'),
         'xgb': os.path.exists(f'eval_models/xgb/{ds}_cv.json')
     } 
@@ -139,24 +138,26 @@ def eval_seeds(
         time_all = 0.0
 
         for sample_seed in range(n_datasets):
+            # if sample_seed == 1: raise ValueError
+
             temp_config['sample']['seed'] = sample_seed
             if n_datasets > 1:
                 start_time = time.time()
-                eval_sampler(sampling_method, temp_config, dataset, device, preprocesser, **kwargs) # synthesize data
+                eval_sampler(sampling_method, temp_config, device, preprocesser, **kwargs) # synthesize data
                 end_time = time.time() 
                 
-                time_all += (start_time - end_time) # a typo, show be negative
+                time_all += (end_time - start_time)
 
             synthetic_data_path = temp_config['parent_dir']
             data_path = temp_config['real_data_path']
                         
             for seed in range(n_seeds):
-                for model_type in ['catboost', 'mlp', 'rf', 'xgb']: 
+                for model_type in ['catboost', 'rf', 'xgb']: 
                     if not eval_support[model_type]:
                         continue
                     else:
                         print(f'**Eval Iter: {sample_seed*n_seeds + (seed + 1)}/{n_seeds * n_datasets}**')
-                        metric_report = prepare_report(model_type, temp_config, seed)
+                        metric_report = prepare_report(model_type, temp_config, seed, test_data=test_data)
                         metrics_seeds_report[model_type].add_report(metric_report)
 
                 query_report.append(make_query(
@@ -165,10 +166,11 @@ def eval_seeds(
                     task_type,
                     query_times = 1000,
                     attr_num = 3,
-                    seeds = seed
+                    seeds = seed,
+                    test_data = test_data
                 ))
                 
-                tvd_error = make_tvd(synthetic_data_path, data_path) 
+                tvd_error = make_tvd(synthetic_data_path, data_path, test_data = test_data) 
                 if not tvd_report:
                     for k,v in tvd_error.items():
                         tvd_report[k] = [v] 
@@ -186,8 +188,8 @@ def eval_seeds(
     save_time_record(time_record, parent_dir)
 
 
-    for model_type in ['catboost', 'mlp', 'rf', 'xgb']:
-        if eval_support[model_type]:
+    for model_type in ['catboost', 'rf', 'xgb']:
+        if model_type in eval_support.keys() and eval_support[model_type]:
             metrics_seeds_report[model_type].get_mean_std()
             res = metrics_seeds_report[model_type].print_result()
 
@@ -239,70 +241,3 @@ def eval_seeds(
     
     return 0 
 
-
-
-
-
-'''
-                # sample via merf model
-                if sampling_method == 'merf':
-                    merf_heterogeneous_sample(
-                        **merf_dict,
-                        parent_dir = temp_config['parent_dir'],
-                        device = device
-                    )
-                # sample via privsyn
-                elif sampling_method == 'privsyn':
-                    privsyn_method.synthesize_records()
-                    privsyn_method.postprocessing(temp_config['parent_dir']) # save raw synthesized data to temp dir
-                    privsyn_postprocess.reverse_mapping_from_files(temp_config['synthesized_filename'], temp_config['mapping_filename'], record_path = str(dir_)) 
-                    privsyn_postprocess.save_data_npy(temp_config['parent_dir']) # save reverse preprocessed synthesized data into temp dir
-                
-                # sample via aim 
-                elif sampling_method == 'aim':
-                    aim_generator.syn_data(
-                        num_synth_rows = temp_config['sample']['sample_num'],
-                        path = dir_,
-                        **aim_dict
-                    )
-                
-                elif sampling_method == 'llm':
-                    llm_generator.sample(
-                        n_samples = temp_config['sample']['sample_num'],
-                        k=temp_config['sample']['k'], 
-                        max_length=temp_config['sample']['max_token'],
-                        device = temp_config['sample']['device'],
-                        save_dir = dir_
-                    )
-
-                # sample via dp_ddpm
-                else:
-                    sample(
-                        num_samples=temp_config['sample']['num_samples'],
-                        batch_size=temp_config['sample']['batch_size'],
-                        disbalance=temp_config['sample'].get('disbalance', None),
-                        **temp_config['diffusion_params'],
-                        parent_dir=temp_config['parent_dir'],
-                        dataset = dataset,
-                        data_path = temp_config['real_data_path'],
-                        model_path=os.path.join(temp_config['parent_dir'], f'model.pt'),
-                        model_type=temp_config['model_type'],
-                        model_params=temp_config['model_params'],
-                        T_dict=temp_config['train']['T'],
-                        num_numerical_features=temp_config['num_numerical_features'],
-                        device=device,
-                        seed=temp_config['sample'].get('seed', 0),
-                        dp = (sampling_method != 'ddpm')
-                    )
-    elif model_type == "mlp":
-        T_dict["normalization"] = "quantile"
-        T_dict["cat_encoding"] = "one-hot"
-        metric_report = train_mlp(
-            parent_dir=temp_config['parent_dir'],
-            data_path=temp_config['real_data_path'],
-            eval_type=eval_type,
-            T_dict=T_dict,
-            seed=seed,
-            change_val=change_val #False
-        )
-'''

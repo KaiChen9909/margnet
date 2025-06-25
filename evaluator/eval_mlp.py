@@ -6,12 +6,11 @@ target_path="./"
 sys.path.append(target_path)
 
 from sklearn.utils import shuffle
-import random
-from TabDDPM.data.data_utils import *
-from TabDDPM.data.dataset import * 
-from TabDDPM.data.metrics import * 
+from evaluator.data.data_utils import *
+from evaluator.data.dataset import * 
+from evaluator.data.metrics import * 
 from pathlib import Path
-from TabDDPM.model.modules import MLP
+from evaluator.util import MLP
 from skorch.regressor import NeuralNetRegressor
 from skorch.classifier import NeuralNetClassifier
 from skorch.dataset import Dataset as SkDataset
@@ -19,6 +18,8 @@ from skorch.callbacks import EarlyStopping, EpochScoring
 from skorch.helper import predefined_split
 from torch.optim import AdamW
 from torch.nn import MSELoss, BCEWithLogitsLoss, CrossEntropyLoss
+
+
 
 
 def train_mlp(
@@ -31,7 +32,8 @@ def train_mlp(
     change_val = False,
     seed = 0,
     device = "cuda:0",
-    model_step = 'finetune'
+    model_step = 'finetune',
+    test_data = 'test'
 ):
     random.seed(seed)
     synthetic_data_path = os.path.join(parent_dir) if parent_dir is not None else None
@@ -74,7 +76,11 @@ def train_mlp(
 
     if not change_val:
         X_num_val, X_cat_val, y_val = read_pure_data(data_path, 'val')
-    X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test')
+    
+    if test_data == 'real':
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'train')
+    else:
+        X_num_test, X_cat_test, y_test = read_pure_data(data_path, 'test')
 
     D = Dataset(
         {'train': X_num, 'val': X_num_val, 'test': X_num_test} if X_num is not None else None,
