@@ -4,6 +4,8 @@ eval_models/
 log/
 exp/
 
+!data/adult/
+
 *.ipynb 
 
 nohup.out

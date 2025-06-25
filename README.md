@@ -1,18 +1,8 @@
-# DP Tabular Data Synthesis Benchmark
-This is a benchmark for dp tabular data synthesis. The necessary code for the paper is all included in this repository. 
+# MargNet
+This is the code repository of MargNet. The necessary code for the paper is all included in this repository. 
 
 ## Introduction
-This benchmark is based on the following algorithms.
-|Algorithms | Link |
-|-----------|------|
-|AIM        |[AIM: An Adaptive and Iterative Mechanism for Differentially Private Synthetic Data](https://arxiv.org/pdf/2201.12677)|
-|DP-MERF    |[DP-MERF: Differentially Private Mean Embeddings with Random Features for Practical Privacy-Preserving Data Generation](https://proceedings.mlr.press/v130/harder21a/harder21a.pdf)|
-|GEM        |[Iterative Methods for Private Synthetic Data: Unifying Framework and New Methods](https://proceedings.neurips.cc/paper/2021/file/0678c572b0d5597d2d4a6b5bd135754c-Paper.pdf)|
-|Private-GSD|[Generating Private Synthetic Data with Genetic Algorithms](https://proceedings.mlr.press/v202/liu23ag/liu23ag.pdf)|
-|PrivMRF    |[Data Synthesis via Differentially Private Markov Random Fields](https://www.vldb.org/pvldb/vol14/p2190-cai.pdf)| 
-|PrivSyn    |[PrivSyn: Differentially Private Data Synthesis](https://www.usenix.org/system/files/sec21fall-zhang-zhikun.pdf)|
-|RAP++      |[Private Synthetic Data for Multitask Learning and Marginal Queries](https://proceedings.neurips.cc/paper_files/paper/2022/file/7428310c0f97f1c6bb2ef1be99c1ec2a-Paper-Conference.pdf)|
-|TabDDPM    |[TabDDPM: Modelling Tabular Data with Diffusion Models](https://proceedings.mlr.press/v202/kotelnikov23a/kotelnikov23a.pdf)|
+We construct a new deep learning method for DP tabular data synthesis.
 
 
 ## Quick Start 
@@ -26,11 +16,12 @@ The code for running experiments is in main.py. The detailed description of the 
 * `--num_preprocess`: preprocessing method for numerical attributes, which is set to uniform binning by default. 
 * `--rare_threshold`: threshold of preprocessing method for categorical attributes, which is set to $0.2\%$ by default.
 * `--sample_device`: device used for sample data, by default is set to the same as running device.
-* `--test`: hyper-parameter used for testing and debug. 
+* `--resample`: whether model use a fixed input or resampled input
+* `--graph_sample`: correspond to a hybrid method, which utilizes junction tree structure to generate data from deep learning model.  
 
 
 ### Preparation
-The necessary packages for the environment are listed in file `requirement.txt`. Firstly, make sure the datasets are put in the correct fold (in the following examples, the fold is `data/bank`, and the necessary dataset has already been provided). In this repository, the evaluation model is already tuned so users do not need any operation. Otherwise, you should tune the evaluation model (using the following code) before any further operation.
+The necessary packages for the environment are listed in file `requirement.txt`. Firstly, make sure the datasets are put in the correct fold. In this repository, the evaluation model is already tuned so users do not need any operation. Otherwise, you should tune the evaluation model (using the following code) before any further operation.
 ```
 python evaluator/tune_eval_model.py bank mlp cv cuda:0
 ```
@@ -66,4 +57,4 @@ The code for evaluation is in file `evaluator/eval_seeds.py`. By default, we gen
 
 
 ## Acknowledge 
-Part of the code is from [AIM](https://github.com/ryan112358/private-pgm), [DP-MERF](https://github.com/ParkLabML/DP-MERF), [GEM](https://github.com/terranceliu/iterative-dp?tab=readme-ov-file), [Private-GSD](https://github.com/giusevtr/private_gsd), [PrivMRF](https://github.com/caicre/PrivMRF), [PrivSyn](https://github.com/agl-c/deid2_dpsyn), [RAP++](https://github.com/amazon-science/relaxed-adaptive-projection), [TabDDPM](https://github.com/yandex-research/tab-ddpm). We sincerely thank them for their contribution to the community.
+Part of the code is from [AIM](https://github.com/ryan112358/private-pgm), [DP-MERF](https://github.com/ParkLabML/DP-MERF), [GEM](https://github.com/terranceliu/iterative-dp?tab=readme-ov-file), [PrivSyn](https://github.com/agl-c/deid2_dpsyn), [RAP++](https://github.com/amazon-science/relaxed-adaptive-projection), [TabDDPM](https://github.com/yandex-research/tab-ddpm). We sincerely thank them for their contribution to the community.
