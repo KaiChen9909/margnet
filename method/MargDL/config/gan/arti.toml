@@ -1,0 +1,11 @@
+parent_dir = 'exp/test/marggan/'
+
+[train]
+selection_iterations = 1000
+final_iterations = 1000
+lr = 1e-3
+batch_size = 512
+
+[model_params]
+d_layers = [512, 512]
+dropout = 0.0

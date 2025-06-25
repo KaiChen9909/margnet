@@ -1,0 +1,77 @@
+["0.2"]
+parent_dir = "exp/test/marggan/"
+
+["0.5"]
+parent_dir = "exp/test/marggan/"
+
+["1.0"]
+parent_dir = "exp/test/marggan/"
+
+["2.0"]
+parent_dir = "exp/test/marggan/"
+
+["5.0"]
+parent_dir = "exp/test/marggan/"
+
+["10.0"]
+parent_dir = "exp/test/marggan/"
+
+["0.2".train]
+selection_iterations = 200
+final_iterations = 200
+lr = 0.001
+batch_size = 256
+
+["0.2".model_params]
+d_layers = [ 256, 256,]
+dropout = 0.0
+
+["0.5".train]
+selection_iterations = 200
+final_iterations = 200
+lr = 0.001
+batch_size = 256
+
+["0.5".model_params]
+d_layers = [ 256, 256,]
+dropout = 0.0
+
+["1.0".train]
+selection_iterations = 200
+final_iterations = 200
+lr = 0.001
+batch_size = 256
+
+["1.0".model_params]
+d_layers = [ 256, 256,]
+dropout = 0.0
+
+["2.0".train]
+selection_iterations = 200
+final_iterations = 200
+lr = 0.001
+batch_size = 256
+
+["2.0".model_params]
+d_layers = [ 256, 256,]
+dropout = 0.0
+
+["5.0".train]
+selection_iterations = 200
+final_iterations = 200
+lr = 0.001
+batch_size = 256
+
+["5.0".model_params]
+d_layers = [ 256, 256,]
+dropout = 0.0
+
+["10.0".train]
+selection_iterations = 100
+final_iterations = 100
+lr = 0.001
+batch_size = 256
+
+["10.0".model_params]
+d_layers = [ 256, 256,]
+dropout = 0.0

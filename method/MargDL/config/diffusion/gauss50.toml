@@ -1,0 +1,83 @@
+["0.2"]
+parent_dir = "exp/gauss50/margdiff/"
+
+["0.5"]
+parent_dir = "exp/gauss50/margdiff/"
+
+["1.0"]
+parent_dir = "exp/gauss50/margdiff/"
+
+["2.0"]
+parent_dir = "exp/gauss50/margdiff/"
+
+["5.0"]
+parent_dir = "exp/gauss50/margdiff/"
+
+["10.0"]
+parent_dir = "exp/gauss50/margdiff/"
+
+["0.2".train]
+selection_iterations = 500
+final_iterations = 500
+lr = 0.001
+batch_size = 512
+
+["0.2".model_params]
+d_layers = [ 1024, 1024,]
+dropout = 0.0
+num_timesteps = 5
+
+["0.5".train]
+selection_iterations = 500
+final_iterations = 500
+lr = 0.001
+batch_size = 512
+
+["0.5".model_params]
+d_layers = [ 1024, 1024,]
+dropout = 0.0
+num_timesteps = 5
+
+["1.0".train]
+selection_iterations = 500
+final_iterations = 500
+lr = 0.001
+batch_size = 512
+
+["1.0".model_params]
+d_layers = [ 1024, 1024,]
+dropout = 0.0
+num_timesteps = 5
+
+["2.0".train]
+selection_iterations = 500
+final_iterations = 500
+lr = 0.001
+batch_size = 512
+
+["2.0".model_params]
+d_layers = [ 1024, 1024,]
+dropout = 0.0
+num_timesteps = 5
+
+["5.0".train]
+selection_iterations = 500
+final_iterations = 500
+lr = 0.001
+batch_size = 512
+
+["5.0".model_params]
+d_layers = [ 1024, 1024,]
+dropout = 0.0
+num_timesteps = 5
+
+["10.0".train]
+selection_iterations = 500
+final_iterations = 500
+lr = 0.001
+batch_size = 512
+
+["10.0".model_params]
+d_layers = [ 1024, 1024,]
+dropout = 0.0
+num_timesteps = 5
