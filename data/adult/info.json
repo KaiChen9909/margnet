@@ -1,0 +1,11 @@
+{
+    "name": "Adult",
+    "id": "Adult--default",
+    "task_type": "binclass",
+    "n_num_features": 2,
+    "n_cat_features": 12,
+    "n_classes":2,
+    "test_size": 0,
+    "train_size": 25907,
+    "val_size": 6477 
+}
