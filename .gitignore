@@ -1,10 +1,11 @@
 catboost_info/
-data/
+data/*
+!data/adult/
+!data/adult/**
 eval_models/
 log/
 exp/
 
-!data/adult/
 
 *.ipynb 
 
