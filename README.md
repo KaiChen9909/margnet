@@ -1,21 +1,18 @@
 # MargNet
 This is the code repository of MargNet. The necessary code for the paper is all included in this repository. 
 
-## Introduction
-We construct a new deep learning method for DP tabular data synthesis. The detailed code of MargNet is in fold `method/MargDL`
+## Method Introduction
+We construct a new deep learning method for DP tabular data synthesis. The detailed code of MargNet is in fold `method/MargDL`. This method applies an adaptive marginal selection framework, and apply it to deep neural networks. 
 
 
 ## Quick Start 
 ### Hyper-parameter Introduction
-The code for running experiments is in main.py. The detailed description of the hyper-parameters are give as follows.
+The code for running experiments is in main.py. The detailed description of the necessary hyper-parameters are give as follows.
 * `method`: which synthesis method you will run. `marggan` corresponds to our method MargNet
 * `dataset`: name of dataset.
 * `device`: the device used for running algorithms. 
 * `epsilon`: DP parameter, which must be delivered when running code. 
 * `--delta`: DP parameter, which is set to $1e-5$ by default.
-* `--num_preprocess`: preprocessing method for numerical attributes, which is set to uniform binning by default. 
-* `--rare_threshold`: threshold of preprocessing method for categorical attributes, which is set to $0.2\%$ by default.
-* `--sample_device`: device used for sample data, by default is set to the same as running device.
 * `--resample`: whether model use a fixed input or resampled input
 * `--graph_sample`: correspond to a hybrid method, which utilizes junction tree structure to generate data from deep learning model.  
 
