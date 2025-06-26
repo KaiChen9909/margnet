@@ -48,7 +48,12 @@ class data_preporcesser_common():
         if X_num is not None:
             if num_prep != 'none':
                 ord = False if self.args.method in ['rap', 'gsd'] else True
-                self.num_encoder = discretizer(num_prep, num_divide * rate * rho, ord=ord)
+                self.num_encoder = discretizer(
+                    num_prep, 
+                    num_divide * rate * rho, 
+                    ord=ord, 
+                    max_splits = getattr(self.args, "max_splits", None)
+                )
             else:
                 if self.args.method == 'ctgan':
                     self.num_encoder = sklearn.preprocessing.MinMaxScaler(feature_range=(-100,100))    
@@ -91,9 +96,13 @@ class data_preporcesser_common():
 
             domain = json.load(open(os.path.join(path, 'domain.json')))
             for i in range(1, self.num_col + 1):
-                domain[f'num_attr_{i}'] = min(domain[f'num_attr_{i}'], len(set(X_num[:, i-1])))
+                temp_data = X_num[:, i-1]
+                temp_data = temp_data[~np.isnan(temp_data)]
+                domain[f'num_attr_{i}'] = min(domain[f'num_attr_{i}'], len(set(temp_data)))
             for i in range(1, self.cat_col + 1):
-                domain[f'cat_attr_{i}'] = min(domain[f'cat_attr_{i}'], len(set(X_cat[:, i-1]))) 
+                temp_data = X_cat[:, i-1]
+                temp_data = temp_data[~np.isnan(temp_data)]
+                domain[f'cat_attr_{i}'] = min(domain[f'cat_attr_{i}'], len(set(temp_data))) 
 
         print('preprocessed data domain:', domain)
         print('finish loading data')
@@ -202,7 +211,6 @@ class data_preporcesser_common():
         
         X_num = X_num[:,:-1]
         y = X_num[:,-1]
-        print(y.shape)
         
         num_divide, cat_divide = 0, 0
 

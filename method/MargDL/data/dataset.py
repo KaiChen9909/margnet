@@ -25,22 +25,42 @@ class Dataset():
         data = data.to_numpy()
         
         bins = [np.arange(self.domain[attr] + 1) for attr in column_tuple]
-        joint_prob = np.histogramdd(data, bins=bins)[0]
 
-        # Add Gaussian noise if rho is provided
-        if rho is not None:
-            joint_prob += np.random.normal(loc=0, scale = 1/np.sqrt(2 * rho), size=joint_prob.shape)
-            # joint_prob += 0.0002
+        print(bins)
 
-        # Clamp the values between 0 and 1
-        joint_prob = np.clip(joint_prob, 0, np.inf)
-        joint_prob = joint_prob / np.sum(joint_prob)
+        if data.shape[0] == 0:
+            # Fallback: no complete rows left, estimate joint as product of marginals
+            marginals = []
+            for i, attr in enumerate(column_tuple):
+                col_data = self.df[attr].dropna().to_numpy()
+                hist = np.histogram(col_data, bins=bins[i])[0]
+                if rho is not None:
+                    hist = hist + np.random.normal(loc=0, scale=1/np.sqrt(2*rho/len(column_tuple)), size=hist.shape)
+
+                hist = np.clip(hist, 0, np.inf)
+                hist = hist / hist.sum()
+                marginals.append(hist)
+
+            joint_prob = marginals[0]
+            for i in range(1, len(marginals)):
+                joint_prob = np.multiply.outer(joint_prob, marginals[i])
+        else:
+            joint_prob = np.histogramdd(data, bins=bins)[0]
+
+            if rho is not None:
+                joint_prob += np.random.normal(loc=0, scale=1/np.sqrt(2*rho), size=joint_prob.shape)
+
+            joint_prob = np.clip(joint_prob, 0, np.inf)
+            joint_prob = joint_prob / np.sum(joint_prob)
+
+        if np.any(np.isnan(joint_prob)):
+            print(column_tuple)
+            raise ValueError('Invalid marginal')
 
         if shape == 'matrix':
             return joint_prob
         elif shape == 'simple':
-            joint_prob = joint_prob.flatten()
-            return joint_prob
+            return joint_prob.flatten()
 
 
     def reverse_to_ordinal(self, one_hot_tensor):

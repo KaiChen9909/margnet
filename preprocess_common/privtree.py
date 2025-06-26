@@ -8,6 +8,7 @@
 
 import numpy as np
 import pandas as pd
+import warnings
 
 def get_domain_subdomains(domain):
     
@@ -61,30 +62,34 @@ class privtree():
     # theta : 50 #min count per domain
     # notice that the data inputed into this mechanism all need preprocess, which means K = data.shape[1]
 
-    def __init__(self, rho, theta=0, domain_margin=1e-2, seed=109):
+    def __init__(self, rho, theta=0, domain_margin=1e-2, max_splits=None, seed=109):
         self.rho = rho
         self.theta = theta 
         self.domain_margin = domain_margin
+        self.max_splits = max_splits
         self.prng = np.random.default_rng(seed)
 
     def fit(self, data):
         self.split = []
+        self.has_nan = np.isnan(data).any()
+        if self.has_nan:
+            raise Warning('Data contains NaN')
 
         if data.ndim > 1:
             K = data.shape[1]
             self.lam, self.delta = self.calculate_param(self.rho, K)
             for i in range(data.shape[1]):
                 x = data[:, i]
-                self.split.append(self.tree_main(x, self.lam*K, self.delta*K))
+                self.split.append(self.tree_main(x, self.lam*K, self.delta*K, self.max_splits))
         else:
             K = 1
             self.lam, self.delta = self.calculate_param(self.rho, K)
-            self.split = self.tree_main(data, self.lam, self.delta)
+            self.split = self.tree_main(data, self.lam, self.delta, self.max_splits)
     
 
     def transform(self, data):
         if data.ndim > 1:
-            transformed_data = np.empty_like(data, dtype=int)
+            transformed_data = np.empty_like(data, dtype=float if self.has_nan else int)
             for i in range(data.shape[1]):
                 x = data[:, i]
                 transformed_data[:, i] = self.transform_data(x, self.split[i])
@@ -96,19 +101,22 @@ class privtree():
 
     def fit_transform(self, data):
         self.split = []
+        self.has_nan = np.isnan(data).any()
+        if self.has_nan:
+            warnings.warn("Data contains NaN", UserWarning)
 
         if data.ndim > 1:
-            transformed_data = np.empty_like(data, dtype=int)
+            transformed_data = np.empty_like(data, dtype=float if self.has_nan else int)
             K = data.shape[1]
             self.lam, self.delta = self.calculate_param(self.rho, K)
             for i in range(data.shape[1]):
                 x = data[:, i]
-                self.split.append(self.tree_main(x, self.lam*K, self.delta*K))
+                self.split.append(self.tree_main(x, self.lam*K, self.delta*K, self.max_splits))
                 transformed_data[:, i] = self.transform_data(x, self.split[i])
         else:
             K = 1
             self.lam, self.delta = self.calculate_param(self.rho, K)
-            self.split = self.tree_main(data, self.lam, self.delta)
+            self.split = self.tree_main(data, self.lam, self.delta, self.max_splits)
             transformed_data = self.transform_data(data, self.split)
 
         return transformed_data
@@ -126,12 +134,14 @@ class privtree():
         return inversed_data
 
 
-    def tree_main(self, x_input, lam, delta):
+    def tree_main(self, x_input, lam, delta, max_splits=None):
         domains = []
         unvisited_domains = []
         counts = []
         noisy_counts = []
         tree_depth = 0
+        if max_splits is None:
+            max_splits = np.inf
 
         x = x_input[~np.isnan(x_input)]
 
@@ -140,7 +150,7 @@ class privtree():
         unvisited_domains.append(v0)
 
         # create subdomains where necessary
-        while not not unvisited_domains: # while unvisited_domains is not empty
+        while unvisited_domains and len(domains) < max_splits: # while unvisited_domains is not empty
             for unvisited in unvisited_domains:
                 # calculate count and noisy count
                 count = count_in_domain(x, unvisited)
@@ -172,7 +182,10 @@ class privtree():
 
         choices = list(range(len(domains)))
         result = np.select(conditions, choices, default=-1)
-        result[is_nan] = data_col[is_nan]
+
+        if self.has_nan:
+            result = result.astype(float)
+            result[is_nan] = data_col[is_nan]
 
         return result
     

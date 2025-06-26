@@ -16,12 +16,13 @@ def laplace_noise(Lambda):
     return np.random.laplace(loc=0, scale=Lambda)
 
 class discretizer():
-    def __init__(self, bins_method, rho, bin_number=100, ord = True):
+    def __init__(self, bins_method, rho, bin_number=100, ord = True, max_splits=None):
         self.bins_method = bins_method
         self.rho = rho
         self.bin_number = bin_number
         self.ord = ord
         self.ord_encoder = None
+        self.max_splits = max_splits
 
     def fit(self, data):
         if self.bins_method == 'none':
@@ -31,7 +32,7 @@ class discretizer():
             data = np.array(data)
 
         self.n_bins = [min(len(set(data[:,i])), self.bin_number) for i in range(data.shape[1])]
-        self.columns_for_kbins = [i for i in range(len(self.n_bins)) if self.n_bins[i] == self.bin_number]
+        self.columns_for_kbins = [i for i in range(len(self.n_bins)) if self.n_bins[i] >= self.bin_number]
         self.columns_for_ordinal = [i for i in range(len(self.n_bins)) if self.n_bins[i] < self.bin_number]
 
         if len(self.columns_for_kbins) > 0:
@@ -51,7 +52,8 @@ class discretizer():
                 )
             elif self.bins_method == 'privtree':
                 self.kbin_encoder = privtree(
-                    self.rho
+                    self.rho,
+                    max_splits = self.max_splits
                 )
             elif self.bins_method == 'dawa':
                 self.kbin_encoder = dawa(
@@ -123,7 +125,8 @@ class discretizer():
                 encoded_data[:, self.columns_for_kbins] = self.kbin_encoder.fit_transform(np.log2(data[:, self.columns_for_kbins]  - self.min_value))
             elif self.bins_method == 'privtree':
                 self.kbin_encoder = privtree(
-                    self.rho
+                    self.rho,
+                    max_splits = self.max_splits
                 )
                 encoded_data[:, self.columns_for_kbins] = self.kbin_encoder.fit_transform(data[:, self.columns_for_kbins])
             elif self.bins_method == 'dawa':
