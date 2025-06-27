@@ -26,8 +26,6 @@ class Dataset():
         
         bins = [np.arange(self.domain[attr] + 1) for attr in column_tuple]
 
-        print(bins)
-
         if data.shape[0] == 0:
             # Fallback: no complete rows left, estimate joint as product of marginals
             marginals = []

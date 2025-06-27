@@ -18,7 +18,7 @@ parent_dir = "exp/flat/margdiff/"
 
 ["0.2".train]
 selection_iterations = 800
-final_iterations = 1000
+final_iterations = 10000
 lr = 0.001
 batch_size = 512
 
@@ -28,7 +28,7 @@ dropout = 0.0
 
 ["0.5".train]
 selection_iterations = 800
-final_iterations = 1000
+final_iterations = 10000
 lr = 0.001
 batch_size = 512
 
@@ -38,7 +38,7 @@ dropout = 0.0
 
 ["1.0".train]
 selection_iterations = 800
-final_iterations = 1000
+final_iterations = 10000
 lr = 0.001
 batch_size = 512
 
@@ -48,7 +48,7 @@ dropout = 0.0
 
 ["2.0".train]
 selection_iterations = 800
-final_iterations = 1000
+final_iterations = 10000
 lr = 0.001
 batch_size = 512
 
@@ -58,7 +58,7 @@ dropout = 0.0
 
 ["5.0".train]
 selection_iterations = 800
-final_iterations = 1000
+final_iterations = 10000
 lr = 0.001
 batch_size = 512
 
@@ -68,7 +68,7 @@ dropout = 0.0
 
 ["10.0".train]
 selection_iterations = 800
-final_iterations = 1000
+final_iterations = 10000
 lr = 0.001
 batch_size = 512
 
