@@ -6,7 +6,11 @@ import pickle
 import math
 import json
 import time
+import signal
+import sys
+
 from copy import deepcopy
+from functools import partial
 from typing import Union
 from util.util import * 
 from preprocess_common.load_data_common import data_preporcesser_common
@@ -45,11 +49,20 @@ if args.method in ['rapp', 'rap_syn'] and args.dataset in ['loan', 'gauss50']:
     os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"]="platform"
     os.environ["JAX_TRACEBACK_FILTERING"] = "off"
 
-def main(args):
+# def handler(signum, frame, parent_dir):
+#     print("Timeout!!!!!!!!!")
+#     warning_dict = {'timeout': 1}
+#     with open(os.path.join(parent_dir, 'timeout.json'), 'w') as file:
+#         json.dump(warning_dict, file)
+#     sys.exit(1)
 
+def main(args):
     print(f'privacy setting: ({args.epsilon}, {args.delta})')
     parent_dir, data_path = make_exp_dir(args)
     time_record = {}
+
+    # signal.signal(signal.SIGALRM, partial(handler, parent_dir=parent_dir))
+    # signal.alarm(129600)
 
     # data preprocess
     total_rho = cdp_rho(args.epsilon, args.delta)

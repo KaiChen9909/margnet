@@ -434,7 +434,7 @@ def add_default_params(args, df, domain):
         args.model_dim = (256, 256)
     elif args.dataset in ['adult', 'loan', 'bank']:
         args.model_dim = (512, 512)
-    elif args.dataset in ['gauss30']:
+    elif args.dataset in ['gauss30', 'gauss50']:
         args.model_dim = (1024, 1024)
 
     args.lr = 1e-3

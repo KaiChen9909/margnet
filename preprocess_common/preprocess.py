@@ -16,7 +16,7 @@ def laplace_noise(Lambda):
     return np.random.laplace(loc=0, scale=Lambda)
 
 class discretizer():
-    def __init__(self, bins_method, rho, bin_number=100, ord = True, max_splits=None):
+    def __init__(self, bins_method, rho, bin_number=10, ord = True, max_splits=None):
         self.bins_method = bins_method
         self.rho = rho
         self.bin_number = bin_number
@@ -158,11 +158,25 @@ class discretizer():
 
         if len(self.columns_for_kbins) > 0:
             if self.bins_method == 'exp_kbins':
-                decoded_data[:, self.columns_for_kbins] = np.exp2(self.kbin_encoder.inverse_transform(decoded_data[:, self.columns_for_kbins]))
+                decoded_data[:, self.columns_for_kbins] = np.exp2(self.inverse_bin(decoded_data[:, self.columns_for_kbins]))
+            elif self.bins_method == 'uniform_kbins':
+                decoded_data[:, self.columns_for_kbins] = self.inverse_bin(decoded_data[:, self.columns_for_kbins])
             else:
                 decoded_data[:, self.columns_for_kbins] = self.kbin_encoder.inverse_transform(decoded_data[:, self.columns_for_kbins])
 
         return decoded_data
+    
+
+    def inverse_bin(self, binned_data):
+        binned = binned_data.astype(int)
+        edges = self.kbin_encoder.bin_edges_
+        sampled = np.empty_like(binned, dtype=float)
+
+        for j in range(binned.shape[1]):
+            left = edges[j][binned[:, j]]
+            right = edges[j][binned[:, j] + 1]
+            sampled[:, j] = np.random.uniform(left, right)
+        return sampled
 
 
 # def single_uniform_kbin(data):

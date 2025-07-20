@@ -7,6 +7,7 @@ import pandas as pd
 import argparse
 import itertools
 import json
+import pickle
 from method.AIM.mbi.Dataset import Dataset
 from method.AIM.mbi.inference import FactoredInference
 from method.AIM.mbi.graphical_model import GraphicalModel
@@ -65,9 +66,19 @@ def filter_candidates(candidates, model, size_limit):
     return ans
 
 
+def get_peak_memory_mb():
+    import resource
+    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return usage / 1024**2
+    else:
+        return usage / 1024
+
+
 class AIM(Mechanism):
     def __init__(
         self,
+        args,
         epsilon=1.0,
         delta=1e-5,
         rho=None,
@@ -83,6 +94,7 @@ class AIM(Mechanism):
             self.rho = rho 
             self.prng = np.random
             self.bouned = bounded
+        self.args = args
         self.rounds = rounds
         self.max_iters = max_iters
         self.max_model_size = max_model_size
@@ -135,10 +147,12 @@ class AIM(Mechanism):
             y = x + self.gaussian_noise(sigma, x.size)
             I = Identity(y.size)
             measurements.append((I, y, sigma, cl))
-            if cl not in marginal_dict.keys():
-                marginal_dict[cl] = 1
+
+            k = ",".join(map(str, cl)) if isinstance(cl, tuple) else cl
+            if k not in marginal_dict.keys():
+                marginal_dict[k] = [1/(2 * sigma**2)]
             else:
-                marginal_dict[cl] += 1
+                marginal_dict[k].append(1/(2 * sigma**2))
 
         zeros = self.structural_zeros
         engine = FactoredInference(
@@ -174,10 +188,11 @@ class AIM(Mechanism):
             measurements.append((Q, y, sigma, cl))
             z = self.model.project(cl).datavector()
 
-            if cl not in marginal_dict.keys():
-                marginal_dict[cl] = 1
+            k = ",".join(map(str, cl)) if isinstance(cl, tuple) else cl
+            if k not in marginal_dict.keys():
+                marginal_dict[k] = [1/(2 * sigma**2)]
             else:
-                marginal_dict[cl] += 1
+                marginal_dict[k].append(1/(2 * sigma**2))
 
             self.model = engine.estimate(measurements)
             w = self.model.project(cl).datavector()
@@ -187,10 +202,16 @@ class AIM(Mechanism):
                 sigma /= 2
                 epsilon *= 2
             
-        print('Selected marginals:', marginal_dict)
         engine.iters = self.max_iters
         self.model = engine.estimate(measurements) 
         print("Finish model construction")
+
+        with open(os.path.join(self.args.parent_dir, 'marginal.json'), 'w') as file:
+            json.dump(marginal_dict, file, indent=4)
+
+        memory_dict = {'memory (MB)': get_peak_memory_mb()}
+        with open(os.path.join(self.args.parent_dir, 'memory.json'), 'w') as file:
+            json.dump(memory_dict, file)
 
         return self.model, marginal_dict
 
@@ -371,6 +392,7 @@ def add_default_params(args):
 
 def aim_main(args, df, domain, rho, **kwargs):
     args = add_default_params(args)
+    args.parent_dir = kwargs.get('parent_dir', None)
     domain = Domain(domain.keys(), domain.values())
     data = Dataset(df, domain)
 
@@ -384,6 +406,7 @@ def aim_main(args, df, domain, rho, **kwargs):
 
     workload = [(cl, 1.0) for cl in workload]
     mech = AIM(
+        args = args, 
         rho = rho,
         max_model_size=args.max_model_size,
         max_iters=args.max_iters,
@@ -396,10 +419,12 @@ def aim_main(args, df, domain, rho, **kwargs):
 
 def aim_ablation_main(args, df, domain, rho, **kwargs):
     args = add_default_params(args)
+    args.parent_dir = kwargs.get('parent_dir', None)
     domain = Domain(domain.keys(), domain.values())
     data = Dataset(df, domain)
 
     mech = AIM(
+        args = args, 
         rho = rho,
         max_model_size=args.max_model_size,
         max_iters=args.max_iters,
@@ -412,10 +437,12 @@ def aim_ablation_main(args, df, domain, rho, **kwargs):
 
 def aim_ablation_chain(args, df, domain, rho, **kwargs):
     args = add_default_params(args)
+    args.parent_dir = kwargs.get('parent_dir', None)
     domain = Domain(domain.keys(), domain.values())
     data = Dataset(df, domain)
 
     mech = AIM(
+        args = args, 
         rho = rho,
         max_model_size=args.max_model_size,
         max_iters=args.max_iters,
@@ -428,10 +455,12 @@ def aim_ablation_chain(args, df, domain, rho, **kwargs):
 
 def aim_ablation_longchain(args, df, domain, rho, **kwargs):
     args = add_default_params(args)
+    args.parent_dir = kwargs.get('parent_dir', None)
     domain = Domain(domain.keys(), domain.values())
     data = Dataset(df, domain)
 
     mech = AIM(
+        args = args, 
         rho = rho,
         max_model_size=args.max_model_size,
         max_iters=args.max_iters,
@@ -444,6 +473,7 @@ def aim_ablation_longchain(args, df, domain, rho, **kwargs):
 
 def aim_ablation_marg(args, df, domain, rho, **kwargs):
     args = add_default_params(args)
+    args.parent_dir = kwargs.get('parent_dir', None)
     domain = Domain(domain.keys(), domain.values())
     data = Dataset(df, domain)
 
@@ -457,6 +487,7 @@ def aim_ablation_marg(args, df, domain, rho, **kwargs):
 
     workload = [(cl, 1.0) for cl in workload]
     mech = AIM(
+        args = args,
         rho = rho,
         max_model_size=args.max_model_size,
         max_iters=args.max_iters,

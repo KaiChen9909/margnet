@@ -7,14 +7,17 @@ log/
 exp/
 
 method/MargDL/flat_main.py 
+method/MargDL/sis.py 
 method/MargDL/data/flat_dataset.py 
 
 *.ipynb 
+*.out
 
 nohup.out
 run_exp.py
 run_ablation.py
 flat_main.py
+temp.py
 
 util/OpenSans-SemiBold.ttf
 util/Times-SemiBold.ttf

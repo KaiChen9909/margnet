@@ -14,7 +14,6 @@ class Dataset():
         self.num_classes = list(domain.values())
         self.column_name = list(domain.keys())
 
-    
     def marginal_query(self, column_tuple, rho = None, shape = 'simple'):
         assert (
             shape in ['matrix', 'simple']
@@ -92,5 +91,21 @@ class Dataset():
         if preprocesser is not None:
             preprocesser.reverse_data(ordinal_data, path)
         return ordinal_data
+    
+    # def update_num_records_est(self, rho, est_value):
+    #     if not self.records_est:
+    #         self._num_records = est_value 
+    #         self.est_param += np.sqrt(rho)
+    #         self.records_est = True
+    #     else:
+    #         self._num_records = (self.est_param * self._num_records + np.sqrt(rho) * est_value)/(self.est_param + np.sqrt(rho))
+    #         self.est_param += np.sqrt(rho)
+
+    # @property
+    # def num_records(self):
+    #     if not self.records_est:
+    #         print('You are using precise value of record number!!!!')
+    #         print('We suggest you to initialize model by one-way marginals and estimate record number with DP')
+    #     return self._num_records
 
         

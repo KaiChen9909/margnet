@@ -35,6 +35,7 @@ def exponential_mechanism(q, eps, sensitivity, prng=np.random, monotonic=False):
 class MST(Mechanism):
     def __init__(
         self,
+        parent_dir,
         epsilon=1.0,
         delta=1e-5,
         rho=None,
@@ -54,18 +55,27 @@ class MST(Mechanism):
         self.max_iters = max_iters
         self.max_model_size = max_model_size
         self.structural_zeros = structural_zeros
+        self.parent_dir = parent_dir
     
     
     def run(self, data, initial_cliques=None):
         initial_cliques = [(attr,) for attr in data.domain.attrs]
 
         measurements = []
-        sigma = np.sqrt(3 / (2 * self.rho))
+        marginal_dict = {}
+
+        sigma = np.sqrt(3 / (2 * len(initial_cliques) * self.rho))
         for cl in initial_cliques:
             x = data.project(cl).datavector()
             y = x + self.gaussian_noise(sigma, x.size)
             I = Identity(y.size)
             measurements.append((I, y, sigma, cl))
+
+            k = ",".join(map(str, cl)) if isinstance(cl, tuple) else cl
+            if k not in marginal_dict.keys():
+                marginal_dict[k] = [1/(2 * sigma**2)]
+            else:
+                marginal_dict[k].append(1/(2 * sigma**2))
 
         engine = FactoredInference(
             data.domain, iters=self.max_iters, warm_start=True, structural_zeros={}
@@ -83,9 +93,6 @@ class MST(Mechanism):
         T.add_nodes_from(data.domain.attrs)
         ds = DisjointSet(data.domain.attrs)
 
-        # for e in initial_cliques:
-        #     T.add_edge(*e)
-        #     ds.merge(*e)
 
         r = len(list(nx.connected_components(T)))
         epsilon = np.sqrt(8 * self.rho / (3*(r - 1)))
@@ -98,18 +105,26 @@ class MST(Mechanism):
             ds.merge(*e)
         
         two_way_cliques = list(T.edges)
-        sigma = np.sqrt(3 / (2 * self.rho))
+        sigma = np.sqrt(3 / (2 * len(two_way_cliques) * self.rho))
         for cl in two_way_cliques:
             x = data.project(cl).datavector()
             y = x + self.gaussian_noise(sigma, x.size)
             I = Identity(y.size)
             measurements.append((I, y, sigma, cl))
 
+            k = ",".join(map(str, cl)) if isinstance(cl, tuple) else cl
+            if k not in marginal_dict.keys():
+                marginal_dict[k] = [1/(2 * sigma**2)]
+            else:
+                marginal_dict[k].append(1/(2 * sigma**2))
+
         engine = FactoredInference(
             data.domain, iters=self.max_iters, warm_start=True, structural_zeros={}
         )
         self.model = engine.estimate(measurements)
         print("Finish model construction")
+        with open(os.path.join(self.parent_dir, 'marginal.json'), 'w') as file:
+            json.dump(marginal_dict, file, indent=4)
     
     def syn_data(
             self, 
@@ -140,9 +155,10 @@ def mst_main(args, df, domain, rho, **kwargs):
 
     mech = MST(
         rho = rho,
+        parent_dir = kwargs.get('parent_dir', None),
         max_iters=args.max_iters,
     )
     mech.run(data)
 
-    return {'mst_generator': mech}
+    return {'aim_generator': mech}
         

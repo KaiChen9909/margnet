@@ -24,7 +24,7 @@ def eval_sampler(
         )
     
     # sample via aim 
-    elif sampling_method == 'aim':
+    elif sampling_method in ['aim', 'pgm_syn', 'mst']:
         kwargs.get("aim_generator").syn_data(
             num_synth_rows = temp_config['sample']['sample_num'],
             path = temp_config['parent_dir'],
