@@ -129,8 +129,6 @@ class MargDLGen():
         enhance_weight = self.dataset.df.shape[1]
         # enhance_weight = 1.0
 
-        self.model.initialize_logits()
-
         one_way_marginals = list(itertools.combinations(self.domain.keys(), 1))
         selected_marginals = [
             (one_way_marginals[i], self.dataset.marginal_query(one_way_marginals[i], measure_rho), weight)
@@ -229,8 +227,6 @@ class MargDLGen():
         weight = 1.0
         enhance_weight = self.dataset.df.shape[1]
         # enhance_weight = 1.0
-
-        self.model.initialize_logits()
 
         one_way_marginals = list(itertools.combinations(self.domain.keys(), 1))
         two_way_marginals = list(itertools.combinations(self.domain.keys(), 2))

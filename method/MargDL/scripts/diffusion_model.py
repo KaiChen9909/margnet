@@ -140,29 +140,14 @@ class QueryDiffusionG(nn.Module):
         for k, q in enumerate(self.queries):
             self.Q_mask[k, q] = 1.0
 
-    def initialize_logits(self, marginals=None):
-        logits_list = []
-        marg_dict = {m[0]: m[1] for m in marginals} if marginals else {}
-        for col_name, col_size in zip(self.column_name, self.num_classes):
-            if col_name in marg_dict:
-                arr = marg_dict[col_name]
-                if len(arr) != col_size:
-                    raise ValueError('Invalid one-way marginal')
-            else:
-                arr = np.ones(col_size, dtype=np.float32) / col_size
-            logits_list.append(torch.tensor(arr, device=self.device))
-        self.init_logits = torch.cat(logits_list, dim=0)
-        return self.init_logits
-
     @torch.no_grad()
     def uniform_sample(self):
         if self.z is None or self.resample:
-            if not hasattr(self, 'init_logits'):
-                raise RuntimeError('Please initialize sample logits')
             z_list = []
             for i in range(len(self.cum_num_classes)-1):
-                start, end = self.cum_num_classes[i], self.cum_num_classes[i+1]
-                probs = self.init_logits[start:end]
+                start = self.cum_num_classes[i]
+                end = self.cum_num_classes[i+1]
+                probs = torch.tensor([1/(end-start) for _ in range(end-start)]).to(self.device)
                 idxs = torch.multinomial(probs, self.batch_size, replacement=True)
                 oh = F.one_hot(idxs, num_classes=(end-start)).float().to(self.device)
                 oh = torch.clamp(oh, 1e-30, 1 - (end-start)*1e-30)

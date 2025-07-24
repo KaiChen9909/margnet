@@ -113,27 +113,6 @@ class MargGAN(nn.Module):
         for k, q in enumerate(self.queries):
             self.Q_mask[k, q] = 1.0
 
-    
-    def initialize_logits(self, marginals=None):
-        logits_list = []
-        if marginals:
-            marginals_dict = {marg[0] : marg[1] for marg in marginals}
-        else:
-            marginals_dict = {}
-
-        for col_name, col_size in zip(self.column_name, self.num_classes):
-            if col_name in marginals_dict:
-                arr = marginals_dict[col_name]
-                if len(arr) != col_size:
-                    raise ValueError('Invalid one-way marginal')
-            else:
-                arr = np.ones(col_size, dtype=np.float32) / col_size
-
-            logits_list.append(torch.tensor(arr, device=self.device))
-
-        self.init_logits = torch.cat(logits_list, dim=0)
-
-        return self.init_logits
 
     @torch.no_grad()
     def uniform_sample(self):
