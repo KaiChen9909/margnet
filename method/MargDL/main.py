@@ -138,7 +138,7 @@ class MargDLGen():
     
         print('-'*100)
         print('Initialization')
-        self.model.store_marginals(selected_marginals, 1.0)
+        self.model.store_marginals(selected_marginals)
         self.model.train_model(
             self.config['train']['lr'], 
             self.config['train']['selection_iterations'],
@@ -174,7 +174,7 @@ class MargDLGen():
             w_t = self.model.obtain_sample_marginals([marg])[0]
 
             # self.model.reset_model()
-            self.model.store_marginals(selected_marginals, enhance_weight)   
+            self.model.store_marginals(selected_marginals)   
             self.model.train_model(
                 self.config['train']['lr'], 
                 self.config['train']['selection_iterations'],
@@ -204,7 +204,7 @@ class MargDLGen():
 
         print('finish marginal selection')
         print('selected marginals:', list(candidates_mask.keys()))
-        self.model.store_marginals(selected_marginals, 1.0)
+        self.model.store_marginals(selected_marginals)
         self.model.train_model(
                 self.config['train']['lr'], 
                 self.config['train']['final_iterations'],

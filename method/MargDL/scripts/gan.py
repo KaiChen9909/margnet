@@ -71,7 +71,7 @@ class MargGAN(nn.Module):
         return index, answer, size, weight
 
 
-    def merge_marginals(self, marginals, enhance_weight):
+    def merge_marginals(self, marginals):
         merged = {}
         for i, (name, matrix, weight) in enumerate(marginals):
             if name not in merged:
@@ -88,11 +88,11 @@ class MargGAN(nn.Module):
         return result
     
 
-    def store_marginals(self, marginals, enhance_weight=1.0, **kwargs):
+    def store_marginals(self, marginals, **kwargs):
         '''
         tansfer marginal to queries and store them
         '''
-        merged_marginals = self.merge_marginals(marginals, enhance_weight)
+        merged_marginals = self.merge_marginals(marginals)
         marginal_list = [marg_list[0] for marg_list in merged_marginals]
 
         self.jt = generate_junction_tree(list(self.column_dims.keys()), marginal_list)
