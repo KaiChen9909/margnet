@@ -135,8 +135,6 @@ class MargDLGen():
             for i in range(len(one_way_marginals))
         ]
         rho_used += measure_rho * len(one_way_marginals)
-
-        print('estimated records number:', self.dataset.est_num_records)
     
         print('-'*100)
         print('Initialization')
@@ -171,7 +169,7 @@ class MargDLGen():
             print('selected marginal:', marg)
 
             # enhance_weight = np.sqrt(np.prod(self.domain[attr] for attr in marg))
-            one_selected_marginals = [(marg, self.dataset.marginal_query(marg, measure_rho, update_records=True), enhance_weight*weight)]
+            one_selected_marginals = [(marg, self.dataset.marginal_query(marg, measure_rho), enhance_weight*weight)]
             selected_marginals += one_selected_marginals
             w_t = self.model.obtain_sample_marginals([marg])[0]
 
