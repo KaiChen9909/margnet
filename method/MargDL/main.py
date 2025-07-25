@@ -108,10 +108,10 @@ class MargDLGen():
         weight = [candidates_weight[marg] for marg in marginal_candidates]
 
         syn_marginals = self.model.obtain_sample_marginals(marginal_candidates)
-        real_marginals = [self.dataset.marginal_query(marg) for marg in marginal_candidates]
+        real_marginals = [self.dataset.marginal_query(marg, scale=False) for marg in marginal_candidates]
 
         for i in range(len(marginal_candidates)):
-            score.append(weight[i] * (self.dataset.num_records * np.linalg.norm(syn_marginals[i] - real_marginals[i], 1)\
+            score.append(weight[i] * (np.linalg.norm(self.dataset.est_num_records * syn_marginals[i] - real_marginals[i], 1)\
                          - np.sqrt(1/(np.pi * rho_measure)) * real_marginals[i].size)) 
         
         idx = exponential_mechanism(score, rho_select, max(weight))
