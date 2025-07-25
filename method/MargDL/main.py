@@ -171,7 +171,7 @@ class MargDLGen():
             print('selected marginal:', marg)
 
             # enhance_weight = np.sqrt(np.prod(self.domain[attr] for attr in marg))
-            one_selected_marginals = [(marg, self.dataset.marginal_query(marg, measure_rho), enhance_weight*weight)]
+            one_selected_marginals = [(marg, self.dataset.marginal_query(marg, measure_rho, update_records=True), enhance_weight*weight)]
             selected_marginals += one_selected_marginals
             w_t = self.model.obtain_sample_marginals([marg])[0]
 
