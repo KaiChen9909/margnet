@@ -112,7 +112,7 @@ class MargDLGen():
 
         for i in range(len(marginal_candidates)):
             score.append(weight[i] * (self.dataset.num_records * np.linalg.norm(syn_marginals[i] - real_marginals[i], 1)\
-                         - np.sqrt(1/(np.pi * rho_measure)) * real_marginals[i].size))
+                         - np.sqrt(1/(np.pi * rho_measure)) * real_marginals[i].size)) 
         
         idx = exponential_mechanism(score, rho_select, max(weight))
 
@@ -131,11 +131,13 @@ class MargDLGen():
 
         one_way_marginals = list(itertools.combinations(self.domain.keys(), 1))
         selected_marginals = [
-            (one_way_marginals[i], self.dataset.marginal_query(one_way_marginals[i], measure_rho), weight)
+            (one_way_marginals[i], self.dataset.marginal_query(one_way_marginals[i], measure_rho, update_records=True), weight)
             for i in range(len(one_way_marginals))
         ]
         rho_used += measure_rho * len(one_way_marginals)
 
+        print('estimated records number:', self.dataset.est_num_records)
+    
         print('-'*100)
         print('Initialization')
         self.model.store_marginals(selected_marginals, 1.0)
@@ -191,7 +193,7 @@ class MargDLGen():
                 terminate = True
             else:
                 w_t_plus_1 = self.model.obtain_sample_marginals([marg])[0]
-                if self.dataset.num_records * np.linalg.norm(w_t_plus_1 - w_t, 1) < np.sqrt(1/(measure_rho * np.pi)) * w_t_plus_1.size:
+                if self.dataset.est_num_records * np.linalg.norm(w_t_plus_1 - w_t, 1) < np.sqrt(1/(measure_rho * np.pi)) * w_t_plus_1.size:
                     if candidates_mask[marg] == 1:
                         print('-'*100)
                         print('!!!!!!!!!!!!!!!!! sigma updated')
@@ -219,107 +221,6 @@ class MargDLGen():
 
         return selected_marginals
     
-
-    def fit_adaptive_indep_back(self, rho):
-        select_rho = 0.1*rho/(16*self.dataset.df.shape[1])
-        measure_rho = 0.9*rho/(16*self.dataset.df.shape[1])
-        rho_used = 0.0
-        weight = 1.0
-        enhance_weight = self.dataset.df.shape[1]
-        # enhance_weight = 1.0
-
-        one_way_marginals = list(itertools.combinations(self.domain.keys(), 1))
-        two_way_marginals = list(itertools.combinations(self.domain.keys(), 2))
-
-        one_selected_marginals = [
-            (one_way_marginals[i], self.dataset.marginal_query(one_way_marginals[i], measure_rho), weight)
-            for i in range(len(one_way_marginals))
-        ]
-        rho_used += measure_rho * len(one_way_marginals)
-
-        one_selected_marginals = obtain_indep_marginals(one_selected_marginals, two_way_marginals)
-
-        print('-'*100)
-        print('Initialization')
-        self.model.store_marginals(one_selected_marginals, 1.0)
-        self.model.train_model(
-            self.config['train']['lr'], 
-            self.config['train']['selection_iterations'],
-            save_loss = self.save_loss,
-            path_prefix = 'init'
-        )
-        print('-'*100)
-
-        candidates_mask = {marg: 1 for marg in one_way_marginals}
-        terminate = False
-
-        round = 1
-        two_selected_marginals = []
-        while not terminate:
-            marg_candidates = two_way_marginals
-
-            candidates_select_weight = {marg: 2.0 for marg in marg_candidates}
-
-            id = self.exponential_marginal_selection(marg_candidates, select_rho, measure_rho, candidates_select_weight)
-            marg = marg_candidates[id]
-
-            if marg not in candidates_mask.keys():
-                candidates_mask[marg] = 1
-            else:
-                candidates_mask[marg] += 1
-            print('selected marginal:', marg)
-
-            new_selected_marginals = [(marg, self.dataset.marginal_query(marg, measure_rho), enhance_weight*weight)]
-            two_selected_marginals += new_selected_marginals
-            w_t = self.model.obtain_sample_marginals([marg])[0]
-
-            one_selected_marginals = [
-                (cl, matrix, w)
-                for (cl, matrix, w) in one_selected_marginals
-                if cl != marg
-            ]   
-            selected_marginals = one_selected_marginals + two_selected_marginals
-
-            self.model.store_marginals(selected_marginals, enhance_weight)   
-            self.model.train_model(
-                self.config['train']['lr'], 
-                self.config['train']['selection_iterations'],
-                save_loss = self.save_loss,
-                path_prefix = f'{round}'
-            )
-            two_selected_marginals[-1] = (new_selected_marginals[0][0], new_selected_marginals[0][1], weight)
-
-            rho_used += measure_rho + select_rho
-            if rho_used + measure_rho + select_rho > rho:
-                weight = weight * np.sqrt(0.9 * (rho - rho_used)/measure_rho)
-                measure_rho = 0.9*(rho - rho_used) 
-                select_rho = 0.1*(rho - rho_used) 
-                terminate = True
-            else:
-                w_t_plus_1 = self.model.obtain_sample_marginals([marg])[0]
-                if self.dataset.num_records * np.linalg.norm(w_t_plus_1 - w_t, 1) < np.sqrt(1/(measure_rho * np.pi)) * w_t_plus_1.size:
-                    if candidates_mask[marg] == 1:
-                        print('-'*100)
-                        print('!!!!!!!!!!!!!!!!! sigma updated')
-                        weight *= np.sqrt(2)
-                        measure_rho *= 2
-                        select_rho *= 2
-            
-            print('-'*100)
-            round += 1
-
-        print('finish marginal selection')
-        print('selected marginals:', list(candidates_mask.keys()))
-        self.model.store_marginals(selected_marginals, 1.0)
-        self.model.train_model(
-                self.config['train']['lr'], 
-                self.config['train']['final_iterations'],
-                save_loss = self.save_loss,
-                path_prefix = 'final'
-            )
-        
-        return selected_marginals
-
 
     def sample(self, num_samples, preprocesser=None, parent_dir=None):
         syn_data = self.model.sample(num_samples)

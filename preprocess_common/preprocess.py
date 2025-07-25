@@ -16,7 +16,7 @@ def laplace_noise(Lambda):
     return np.random.laplace(loc=0, scale=Lambda)
 
 class discretizer():
-    def __init__(self, bins_method, rho, bin_number=10, ord = True, max_splits=None):
+    def __init__(self, bins_method, rho, bin_number=100, ord = True, max_splits=None):
         self.bins_method = bins_method
         self.rho = rho
         self.bin_number = bin_number

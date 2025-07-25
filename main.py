@@ -61,11 +61,10 @@ def main(args):
     parent_dir, data_path = make_exp_dir(args)
     time_record = {}
 
-    # signal.signal(signal.SIGALRM, partial(handler, parent_dir=parent_dir))
-    # signal.alarm(129600)
-
     # data preprocess
     total_rho = cdp_rho(args.epsilon, args.delta)
+    print('zCDP rho:', total_rho)
+    
     data_preprocesser = data_preporcesser_common(args)
     df, domain, preprocesser_divide  = data_preprocesser.load_data(data_path, total_rho) 
     df_pub = data_preprocesser.load_pub_data(data_path)

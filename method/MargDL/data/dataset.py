@@ -10,11 +10,20 @@ class Dataset():
         self.df = df
         self.device = device
         self.num_records = df.shape[0]
+        self.est_num_records = 0  # estimated number of records
 
         self.num_classes = list(domain.values())
         self.column_name = list(domain.keys())
+    
+    def update_est_records(self, num, rho):
+        if self.est_num_records == 0:
+            self.est_num_records = num
+            self.acc_weight = np.sqrt(rho)
+        else:
+            self.est_num_records = (self.acc_weight * self.est_num_records + np.sqrt(rho) * num)/(self.acc_weight + np.sqrt(rho))
+            self.acc_weight += np.sqrt(rho)
 
-    def marginal_query(self, column_tuple, rho = None, shape = 'simple'):
+    def marginal_query(self, column_tuple, rho = None, shape = 'simple', update_records = False):
         assert (
             shape in ['matrix', 'simple']
         ), "Please provide proper shape request"
@@ -46,6 +55,9 @@ class Dataset():
 
             if rho is not None:
                 joint_prob += np.random.normal(loc=0, scale=1/np.sqrt(2*rho), size=joint_prob.shape)
+
+            if update_records:
+                self.update_est_records(np.sum(joint_prob), rho)
 
             joint_prob = np.clip(joint_prob, 0, np.inf)
             joint_prob = joint_prob / np.sum(joint_prob)

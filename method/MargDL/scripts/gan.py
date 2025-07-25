@@ -12,15 +12,6 @@ from collections import deque
 from method.MargDL.scripts.denoiser import *
 from method.MargDL.scripts.graph import *
 
-def prob_to_softmax_onehot(x, num_classes, tau=1.0):
-    splits = torch.split(x, num_classes.tolist(), dim=1)
-    one_hot_splits = [
-        F.softmax(split, dim=1) for split in splits
-    ]
-
-    one_hot_x = torch.cat(one_hot_splits, dim=1)
-    return one_hot_x 
-
 
 class MargGAN(nn.Module):
     def __init__(self, config, domain, device='cuda:0', **kwargs):
