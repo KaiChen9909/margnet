@@ -184,6 +184,7 @@ class MargGAN(nn.Module):
         return x
 
     def sample(self, num_samples):
+        self.model.eval()
         if self.sample_type == 'graphical':
             logits = self.sample_logits().exp()
             res = graph_sample(logits, self.jt, self.column_name, self.cum_num_classes, self.device, num_samples=num_samples)
@@ -220,6 +221,7 @@ class MargGAN(nn.Module):
 
     @torch.no_grad()
     def obtain_sample_marginals(self, marginals, **kwargs):
+        self.model.eval()
         logits = self.sample_logits()
         res = []
         if self.sample_type == 'graphical':
