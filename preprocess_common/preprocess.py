@@ -343,7 +343,6 @@ class rare_merger():
                 self.freq_values[i] = list(np.unique(encoded_data[:, i]))
             print(f'No need for merge under threshold {self.rare_threshold}')
 
-        # 初始化编码器
         if self.output_type == 'ordinal':
             self.ordinal_encoder = sklearn.preprocessing.OrdinalEncoder(
                 handle_unknown='use_encoded_value',
