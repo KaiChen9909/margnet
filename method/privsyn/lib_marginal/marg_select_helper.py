@@ -97,7 +97,6 @@ def calculate_indif(logger, df, dataset_domain, original_domain, dataset_name, r
         indif_df.error *= n
         indif_df.error += np.random.normal(
             scale=np.sqrt(8 * indif_df.shape[0]/rho), size=indif_df.shape[0])
-        raise ValueError
 
     # publish indif
     pickle.dump(indif_df, open(
