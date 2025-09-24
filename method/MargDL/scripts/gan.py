@@ -144,7 +144,7 @@ class MargGAN(nn.Module):
     def compute_loss(self, Q, ans_weight, real_ans):
         x_pred = self.predict_x(self.uniform_sample())  
         
-        S = x_pred @ Q.T
+        S = x_pred @ Q.T # x_pred is a logits now
         syn_ans = S.exp().mean(dim=0)  
 
         loss  = (ans_weight * (syn_ans - real_ans)**2).sum()

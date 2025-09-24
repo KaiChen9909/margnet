@@ -56,6 +56,7 @@ class ddpm_sampler():
         parent_dir = None,
         batch_size = 2000,
         disbalance = None,
+        empirical_class_dist = None,
         seed = 0
     ):
         np.random.seed(seed)
@@ -68,7 +69,8 @@ class ddpm_sampler():
         self.diffusion.eval()
         
         print('Sampling ... ')
-        _, empirical_class_dist = torch.unique(torch.from_numpy(self.D.y['train']), return_counts=True)
+        if empirical_class_dist is None:
+            _, empirical_class_dist = torch.unique(torch.from_numpy(self.D.y['train']), return_counts=True)
         
         if disbalance == 'fix':
             empirical_class_dist[0], empirical_class_dist[1] = empirical_class_dist[1], empirical_class_dist[0]
