@@ -182,22 +182,24 @@ class MargDLGen():
                 path_prefix = f'{round}'
             )
             selected_marginals[-1] = (one_selected_marginals[0][0], one_selected_marginals[0][1], weight)
-
             rho_used += measure_rho + select_rho
+
+            # privacy budget allocation update
+            w_t_plus_1 = self.model.obtain_sample_marginals([marg])[0]
+            if self.dataset.est_num_records * np.linalg.norm(w_t_plus_1 - w_t, 1) < np.sqrt(1/(measure_rho * np.pi)) * w_t_plus_1.size:
+                if candidates_mask[marg] == 1:
+                    print('-'*100)
+                    print('!!!!!!!!!!!!!!!!! sigma updated')
+                    weight *= np.sqrt(2)
+                    measure_rho *= 2
+                    select_rho *= 2
+
+            # termination condition
             if rho_used + measure_rho + select_rho > rho:
                 weight = weight * np.sqrt(0.9 * (rho - rho_used)/measure_rho)
                 measure_rho = 0.9*(rho - rho_used) 
                 select_rho = 0.1*(rho - rho_used) 
                 terminate = True
-            else:
-                w_t_plus_1 = self.model.obtain_sample_marginals([marg])[0]
-                if self.dataset.est_num_records * np.linalg.norm(w_t_plus_1 - w_t, 1) < np.sqrt(1/(measure_rho * np.pi)) * w_t_plus_1.size:
-                    if candidates_mask[marg] == 1:
-                        print('-'*100)
-                        print('!!!!!!!!!!!!!!!!! sigma updated')
-                        weight *= np.sqrt(2)
-                        measure_rho *= 2
-                        select_rho *= 2
             
             print('-'*100)
             round += 1
