@@ -24,7 +24,7 @@ def eval_sampler(
         )
     
     # sample via aim 
-    elif sampling_method in ['aim', 'pgm_syn', 'mst']:
+    elif sampling_method in ['aim', 'pgm_syn', 'mst'] or sampling_method.startswith('aim'):
         kwargs.get("aim_generator").syn_data(
             num_synth_rows = temp_config['sample']['sample_num'],
             path = temp_config['parent_dir'],
@@ -62,7 +62,7 @@ def eval_sampler(
             seed = temp_config['sample']['seed']
         ) 
     
-    elif sampling_method in ['sis', 'marggan', 'margdiff']:
+    elif sampling_method in ['sis', 'marggan', 'margdiff'] or sampling_method.startswith('marggan'):
         kwargs.get("MargDL_generator").sample(
             num_samples = temp_config['sample']['sample_num'],
             preprocesser = preprocesser,

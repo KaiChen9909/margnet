@@ -71,7 +71,7 @@ def main(args):
     with open(os.path.join(parent_dir, 'preprocesser.pkl'), "wb") as file:
         pickle.dump(data_preprocesser, file)
         
-    if args.method in ['ddpm', 'pe_ddpm', 'ctgan']:
+    if args.method in ['ddpm', 'ctgan']:
         param_dict = {'rho_used': preprocesser_divide*total_rho} 
     else:
         param_dict = {}

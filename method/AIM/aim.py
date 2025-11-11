@@ -218,7 +218,7 @@ class AIM(Mechanism):
 
     def report_detailed_error(self, data, marginal_dict, parent_dir):
         all_margs = list(itertools.combinations(data.domain, 2))
-        sel_margs = list(marginal_dict.keys())
+        sel_margs = [tuple(k.split(',')) for k in marginal_dict.keys()]
         sel_label = [
             1 if marg in sel_margs else 0 
             for marg in all_margs
@@ -239,8 +239,7 @@ class AIM(Mechanism):
         error_df.to_csv(os.path.join(parent_dir, 'marg error.csv'))
 
 
-
-    def report_l1_loss(self, measurements, parent_dir, report_type='stat'):
+    def report_l1_loss(self, measurements, parent_dir, filename='fitting error'):
         import json 
 
         report = {'marg_num': len(measurements)}
@@ -254,43 +253,68 @@ class AIM(Mechanism):
                 np.sum(np.abs(syn_res - real_res))
             )
         
-        if report_type == 'stat':
-            report['mean loss'] = np.mean(loss)
-            report['max loss'] = np.max(loss)
-            report['min loss'] = np.min(loss)
-            report['sum loss'] = np.sum(loss)
-            report['loss std'] = np.std(loss)
-        else:
-            report['loss'] = loss
+        report['mean loss'] = np.mean(loss)
+        report['max loss'] = np.max(loss)
+        report['min loss'] = np.min(loss)
+        report['sum loss'] = np.sum(loss)
+        report['loss std'] = np.std(loss)
 
-        with open(os.path.join(parent_dir, 'fitting error.json'), 'w') as file:
+        with open(os.path.join(parent_dir, f'{filename}.json'), 'w') as file:
             json.dump(report, file)
 
-    def fit_random(self, data, marg_num, parent_dir, seed=109):
+
+    # detailed comparison, same selected marginals and fit
+    def fit_iter(self, data, marg_num, parent_dir, seed=111):
         assert (marg_num > 0), 'Must a positive number of marginals'
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(seed) # make sure use the same seed !!!
 
         two_way_marginals = list(itertools.combinations(data.domain, 2))
         marginal_range = np.arange(len(two_way_marginals))
         marginal_index = rng.choice(marginal_range, size=marg_num, replace=False)
 
-        measurements = []
-        for i in marginal_index:
+        unselected_measurements = []
+        # add unselected marginals
+        for i in marginal_range:
+            if i not in marginal_index:
+                cl = two_way_marginals[i]
+                x = data.project(cl).datavector()
+                I = Identity(x.size)
+                unselected_measurements.append((I, x, 1.0, cl))
+        
+        # add selected marginals
+        for i in reversed(marginal_index):
             cl = two_way_marginals[i]
+            x = data.project(cl).datavector()
+            I = Identity(x.size)
+            unselected_measurements.append((I, x, 1.0, cl))
+
+        measurements = [] # init with 2-way marg
+        for cl in list(itertools.combinations(data.domain, 1)):
             x = data.project(cl).datavector()
             I = Identity(x.size)
             measurements.append((I, x, 1.0, cl))
 
-        zeros = self.structural_zeros
-        engine = FactoredInference(
-            data.domain, iters=max(200*marg_num, 1000), warm_start=True, structural_zeros=zeros
-        )
-        self.model = engine.estimate(measurements)
+        for i in range(marg_num):
+            print(f'test for {i+1} marginals')
+            meas = unselected_measurements.pop() # get an selected marginal
+            measurements.append(meas) # add to measurements
 
-        self.report_l1_loss(
-            measurements,
-            parent_dir
-        )
+            zeros = self.structural_zeros
+            engine = FactoredInference(
+                data.domain, iters=1000, warm_start=True, structural_zeros=zeros
+            )
+            self.model = engine.estimate(measurements)
+
+            self.report_l1_loss(
+                measurements,
+                parent_dir,
+                filename = f'{i} fitting error'
+            )
+            self.report_l1_loss(
+                unselected_measurements,
+                parent_dir,
+                filename = f'{i} no fitting error'
+            )
     
     def fit_chain(self, data, parent_dir):
         attrs = data.domain.attrs
@@ -319,8 +343,7 @@ class AIM(Mechanism):
 
         self.report_l1_loss(
             chain_measurements,
-            parent_dir,
-            'raw'
+            parent_dir
         )
     
     def fit_longchain(self, data, parent_dir):
@@ -430,7 +453,7 @@ def aim_ablation_main(args, df, domain, rho, **kwargs):
         max_iters=args.max_iters,
     )
 
-    mech.fit_random(data, args.marg_num, kwargs.get('parent_dir', None))
+    mech.fit_iter(data, args.marg_num, kwargs.get('parent_dir', None))
 
     return {'aim_generator': mech}
 
@@ -497,7 +520,6 @@ def aim_ablation_marg(args, df, domain, rho, **kwargs):
     mech.report_detailed_error(data, marginal_dict, kwargs.get('parent_dir', None))
 
     return {'aim_generator': mech}
-
 
 
 # def default_params():

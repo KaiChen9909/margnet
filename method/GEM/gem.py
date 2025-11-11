@@ -464,7 +464,7 @@ def gem_main(args, df, domain, rho, parent_dir, **kwargs):
     ### Train generator ###
     # delta = 1.0 / N ** 2
     # eps0, rho = util.get_eps0_zCDP(args.epsilon, delta, args.T, alpha=args.alpha)
-    eps0 = util.get_eps0_simple(rho, args.T, alpha=args.alpha)
+    eps0 = util.get_eps0_simple(rho, args.T, alpha=args.alpha) # This is a intermediate param for zCDP, not eps-DP !!!!
 
     gem = GEM(
         embedding_dim=args.dim, device=args.device, gen_dim=args.model_dim, batch_size=args.syndata_size, save_dir=parent_dir,

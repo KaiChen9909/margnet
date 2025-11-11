@@ -221,6 +221,25 @@ class MargDLGen():
 
         return selected_marginals
     
+    def report_detailed_error(self, selected_marginals):
+        all_margs = list(itertools.combinations(self.dataset.domain, 2))
+        sel_margs = [x[0] for x in selected_marginals]
+        sel_label = [
+            1 if marg in sel_margs else 0 
+            for marg in all_margs
+        ]
+
+        syn = self.model.obtain_sample_marginals(all_margs)
+        real = [self.dataset.marginal_query(marg, scale=True) for marg in all_margs]
+
+        errors = [np.sum(np.abs(syn[i]-real[i])) for i in range(len(all_margs))]
+
+        error_df = pd.DataFrame({
+            'label': sel_label,
+            'error': errors
+        })
+        error_df.to_csv(os.path.join(self.parent_dir, 'marg error.csv'))
+    
 
     def sample(self, num_samples, preprocesser=None, parent_dir=None):
         syn_data = self.model.sample(num_samples)

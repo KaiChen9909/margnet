@@ -2,6 +2,7 @@ import torch
 import numpy as np 
 import pandas as pd 
 import torch.nn.functional as F
+import itertools
 
 
 class Dataset():
@@ -14,6 +15,7 @@ class Dataset():
 
         self.num_classes = list(domain.values())
         self.column_name = list(domain.keys())
+
     
     def update_est_records(self, num, rho):
         if rho is not None:
@@ -26,16 +28,16 @@ class Dataset():
         else:
             pass 
 
-    def marginal_query(self, column_tuple, rho = None, shape = 'simple', scale=True, update_records = False):
+    def marginal_query(self, attr_tuple, rho = None, shape = 'simple', scale=True, update_records = False):
         assert (
             shape in ['matrix', 'simple']
         ), "Please provide proper shape request"
 
-        data = self.df[list(column_tuple)]
+        data = self.df[list(attr_tuple)]
         data = data.dropna()
         data = data.to_numpy()
         
-        bins = [np.arange(self.domain[attr] + 1) for attr in column_tuple]
+        bins = [np.arange(self.domain[attr] + 1) for attr in attr_tuple]
 
         joint_prob = np.histogramdd(data, bins=bins)[0]
 
@@ -54,6 +56,73 @@ class Dataset():
         elif shape == 'simple':
             return joint_prob.flatten()
 
+
+    def obtain_all_query(self, rho=None, scale=True, order=2, update_records=False):
+        '''
+        This function return all marginal query, used for ablation study
+        The answer are in order !!!
+        '''
+        all_attr_tuple = list(itertools.combinations(self.domain.keys(), order))
+        res = []
+
+        if rho is not None:
+            rho_each = rho/len(all_attr_tuple)
+        else:
+            rho_each=rho
+
+        for attr_tuple in all_attr_tuple:
+            ans = self.marginal_query(attr_tuple, rho=rho_each, scale=scale, update_records=update_records)
+            res += list(ans) 
+        
+        return res
+
+    def obtain_all_query_index(self, order=2):
+        '''
+        This function return the index of all 2-way marginal query
+        '''
+        if order == 1:
+            total_dim = sum(self.domain.values())
+            return list(np.arange(total_dim))
+        elif order == 2:
+            attr_ranges = {}
+            start = 0
+            for attr, num_classes in self.domain.items():
+                attr_ranges[attr] = range(start, start + num_classes)
+                start += num_classes
+            
+            attr_list = list(self.domain.keys())
+            return [
+                (col1, col2)
+                for attr1, attr2 in itertools.combinations(attr_list, 2)
+                for col1, col2 in itertools.product(attr_ranges[attr1], attr_ranges[attr2])
+            ]
+        else:
+            raise NotImplementedError
+
+    def query_from_indices(self, indices, rho=None, scale=True):
+        if not hasattr(self, '_idx_to_attr_class'):
+            self._idx_to_attr_class = {}
+            start = 0
+            for attr, num_classes in self.domain.items():
+                for i in range(num_classes):
+                    self._idx_to_attr_class[start + i] = (attr, i)
+                start += num_classes
+        
+        mask = np.ones(len(self.df), dtype=bool)
+        for idx in indices:
+            attr, class_value = self._idx_to_attr_class[idx]
+            mask &= (self.df[attr].values == class_value)
+        count = float(mask.sum())
+        
+        # add noise
+        if rho is not None:
+            count += np.random.normal(loc=0, scale=1/np.sqrt(2*rho))
+            count = np.clip(count, 0, np.inf)
+        
+        # scale
+        if scale:
+            return count / len(self.df)
+        return count
 
     def reverse_to_ordinal(self, one_hot_tensor):
         cum_num_classes = torch.cat([torch.tensor([0]), torch.cumsum(torch.tensor(self.num_classes, dtype=torch.int64), dim=0)])

@@ -123,9 +123,18 @@ def algo_method(args):
     elif args.method == 'ctgan':
         from method.CTGAN.main import ctgan_main 
         algo = ctgan_main 
-    elif args.method == 'sis':
-        from method.MargDL.sis import sis_main
-        algo = sis_main
+    elif args.method == 'marggan_update':
+        from method.MargDL.ablation_main import marggan_ablation_update
+        algo = marggan_ablation_update
+    elif args.method == 'marggan_noweight':
+        from method.MargDL.ablation_main import marggan_ablation_noweight
+        algo = marggan_ablation_noweight
+    elif args.method == 'marggan_query':
+        from method.MargDL.ablation_main import marggan_ablation_query
+        algo = marggan_ablation_query
+    elif args.method == 'marggan_iter':
+        from method.MargDL.ablation_main import marggan_ablation_iter
+        algo = marggan_ablation_iter
     
     return algo
 
@@ -134,7 +143,7 @@ def algo_ablation_method(args):
     if args.method == 'aim':
         from method.AIM.aim import aim_ablation_main 
         algo = aim_ablation_main
-    elif args.method in ['marggan', 'marggan_adapt']:
+    elif args.method in ['marggan']:
         from method.MargDL.ablation import marggan_ablation_main
         algo = marggan_ablation_main
     elif args.method in ['merf_fit']:
@@ -157,18 +166,3 @@ def algo_ablation_method(args):
         algo = aim_ablation_marg
     
     return algo
-
-
-def algo_temp(args):
-    if args.method == 'marggan':
-        from method.MargDL.ablation import marggan_temp
-        return marggan_temp
-    elif args.method == 'margdiff':
-        from method.MargDL.ablation import margdiff_temp
-        return margdiff_temp
-    elif args.method == 'pgm_syn':
-        from method.reconstruct_algo.combine_exp_pgm_syn import pgm_syn_main
-        return pgm_syn_main
-    elif args.method == 'mst':
-        from method.AIM.mst import mst_main 
-        return mst_main

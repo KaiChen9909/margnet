@@ -63,7 +63,7 @@ class MargDLGen_ablation(MargDLGen):
 
 
 
-    def report_l1_loss(self, selected_marginals, parent_dir, report_type = 'stat'):
+    def report_l1_loss(self, selected_marginals, parent_dir, file_name='fitting error', report_type = 'stat'):
         import json 
 
         report = {'marg_num': len(selected_marginals)}
@@ -83,40 +83,59 @@ class MargDLGen_ablation(MargDLGen):
         else:
             report['loss'] = loss
 
-        with open(os.path.join(parent_dir, 'fitting error.json'), 'w') as file:
+        with open(os.path.join(parent_dir, f'{file_name}.json'), 'w') as file:
             json.dump(report, file)
 
 
-    def fit_random_adap(self, marg_num, save_loss=False, seed=109):
+    def fit_iter(self, marg_num, save_loss=False, seed=109):
         assert (marg_num > 0), 'Must a positive number of marginals'
         rng = np.random.default_rng(seed)
-        self.model.initialize_logits()
 
         two_way_marginals = list(itertools.combinations(self.domain.keys(), 2))
         marginal_range = np.arange(len(two_way_marginals))
         marginal_index = rng.choice(marginal_range, size=marg_num, replace=False)
 
-        selected_marginals = []
-        for i in marginal_index:
-            selected_marginals.append(
-                (two_way_marginals[i], self.dataset.marginal_query(two_way_marginals[i], None), 1.0)
-            )
-            self.model.store_marginals(selected_marginals, 1.0)
+        # build a marginal measurement list, unselected marginal + selected marginal
+        unselected_marginals = [ 
+            (two_way_marginals[i], self.dataset.marginal_query(two_way_marginals[i], None), 1.0) 
+            for i in marginal_range if i not in marginal_index
+        ] + [
+            (two_way_marginals[i], self.dataset.marginal_query(two_way_marginals[i], None), 1.0) 
+            for i in reversed(marginal_index)
+        ]
+
+        selected_marginals = [
+            (marg, self.dataset.marginal_query(marg, None), 1.0) 
+            for marg in list(itertools.combinations(self.domain.keys(), 1))
+        ]
+        
+        for i in range(marg_num):
+            mea = unselected_marginals.pop() # pop a selected marginal
+            selected_marginals.append(mea) # add it into model
+
+            self.model.reset_model()
+            self.model.store_marginals(selected_marginals)
             self.model.train_model(
                 self.config['train']['lr'], 
                 self.config['train']['selection_iterations']
             )
         
-        self.report_l1_loss(
-            selected_marginals,
-            self.parent_dir
-        )
+            self.report_l1_loss(
+                selected_marginals,
+                self.parent_dir,
+                file_name = f'{i} fitting error'
+            )
+            self.report_l1_loss(
+                unselected_marginals,
+                self.parent_dir,
+                file_name = f'{i} no fitting error'
+            )
 
-    def fit_random(self, marg_num, save_loss=False, seed=109):
+
+    def fit_random(self, marg_num, save_loss=False, seed=111):
         torch.cuda.reset_peak_memory_stats()
         assert (marg_num > 0), 'Must a positive number of marginals'
         rng = np.random.default_rng(seed)
-        self.model.initialize_logits()
 
         two_way_marginals = list(itertools.combinations(self.domain.keys(), 2))
         marginal_range = np.arange(len(two_way_marginals))
@@ -127,7 +146,7 @@ class MargDLGen_ablation(MargDLGen):
             selected_marginals.append(
                 (two_way_marginals[i], self.dataset.marginal_query(two_way_marginals[i], None), 1.0)
             )
-            self.model.store_marginals(selected_marginals, 1.0)
+            self.model.store_marginals(selected_marginals)
 
         self.model.train_model(
             self.config['train']['lr'], 
@@ -136,19 +155,19 @@ class MargDLGen_ablation(MargDLGen):
         )
         self.report_l1_loss(
             selected_marginals,
-            self.parent_dir
+            self.parent_dir,
+            file_name = 'fitting error'
         )
 
     def fit_all(self, save_loss=False):
         two_way_marginals = list(itertools.combinations(self.domain.keys(), 2))
         selected_marginals = []
-        self.model.initialize_logits()
 
         for i in range(len(two_way_marginals)):
             selected_marginals.append(
                 (two_way_marginals[i], self.dataset.marginal_query(two_way_marginals[i], None), 1.0)
             )
-            self.model.store_marginals(selected_marginals, 1.0)
+            self.model.store_marginals(selected_marginals)
 
         self.model.train_model(
             self.config['train']['lr'], 
@@ -175,40 +194,6 @@ class MargDLGen_ablation(MargDLGen):
         )
     
 
-    def fit_fix(self, rho, **kwargs):
-        # import json
-        # with open('exp/adult/aim/1.0_privtree_0.002/marginal.json', 'rb') as file:
-        #     file_marginals = json.load(file)
-        
-        self.model.initialize_logits()
-
-        # selected_marginals = []
-        # for k,v in file_marginals.items():
-        #     marg = tuple(k.split(','))
-        #     for rho in v:
-        #         selected_marginals = [
-        #             (marg, self.dataset.marginal_query(marg, rho), np.sqrt(rho))
-        #         ]
-        one_way_marginals = list(itertools.combinations(self.domain.keys(), 1))
-        selected_marginals = [
-            (one_way_marginals[i], self.dataset.marginal_query(one_way_marginals[i], 0.1*rho/len(one_way_marginals)), 1.0)
-            for i in range(len(one_way_marginals))
-        ]
-
-        marginal_list = PrivSyn.two_way_marginal_selection(self.dataset.df, self.domain, 0.1*rho, 0.8*rho)
-        selected_marginals += [
-            (marginal_list[i], self.dataset.marginal_query(marginal_list[i], 0.8*rho/len(marginal_list)), 1.0)
-            for i in range(len(marginal_list))
-        ]
-        
-        self.model.store_marginals(selected_marginals, 1.0)
-        self.model.train_model(
-            self.config['train']['lr'], 
-            2000
-        )
-
-        return 0
-
 
 
 def marggan_ablation_main(args, df, domain, rho, **kwargs):
@@ -229,10 +214,8 @@ def marggan_ablation_main(args, df, domain, rho, **kwargs):
     )
 
     if not args.adaptive:
-        config['train']['selection_iterations'] = max(config['train']['selection_iterations']*args.marg_num, 1000)
-        generator.fit_random(args.marg_num, save_loss=True)
-    else:
-        generator.fit_random_adap(args.marg_num, save_loss=True)
+        config['train']['selection_iterations'] = 1000
+        generator.fit_iter(args.marg_num, save_loss=True)
 
     return {'MargDL_generator': generator}
 
@@ -260,8 +243,6 @@ def marggan_ablation_all(args, df, domain, rho, **kwargs):
     return {'MargDL_generator': generator}
 
 
-
-
 def marggan_ablation_marg(args, df, domain, rho, **kwargs):
     config_path = os.path.join('method/MargDL/config/gan', f'{args.dataset}.toml')
     with open(config_path, 'rb') as file:
@@ -281,49 +262,5 @@ def marggan_ablation_marg(args, df, domain, rho, **kwargs):
 
     selected_marginals = generator.fit_adaptive(rho)
     generator.report_detailed_error(selected_marginals)
-
-    return {'MargDL_generator': generator}
-
-
-def marggan_temp(args, df, domain, rho, **kwargs):
-    config_path = os.path.join('method/MargDL/config/gan', f'{args.dataset}.toml')
-    with open(config_path, 'rb') as file:
-        config = tomli.load(file)[f'{args.epsilon}']
-
-    generator = MargDLGen_ablation(
-        args = args,
-        df = df,
-        df_pub = kwargs.get('df_pub', None),
-        domain = domain,
-        device = args.device,
-        config = config,
-        parent_dir = kwargs.get('parent_dir', None),
-        model_type = 'gan',
-        sample_type = 'graphical' if args.graph_sample else 'direct'
-    )
-
-    generator.fit_fix(rho)
-
-    return {'MargDL_generator': generator}
-
-
-def margdiff_temp(args, df, domain, rho, **kwargs):
-    config_path = os.path.join('method/MargDL/config/diffusion', f'{args.dataset}.toml')
-    with open(config_path, 'rb') as file:
-        config = tomli.load(file)[f'{args.epsilon}']
-
-    generator = MargDLGen_ablation(
-        args = args,
-        df = df,
-        df_pub = kwargs.get('df_pub', None),
-        domain = domain,
-        device = args.device,
-        config = config,
-        parent_dir = kwargs.get('parent_dir', None),
-        model_type = 'diffusion',
-        sample_type = 'graphical' if args.graph_sample else 'direct'
-    )
-
-    selected_marginals = generator.fit_fix(rho)
 
     return {'MargDL_generator': generator}
