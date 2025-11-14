@@ -2,7 +2,7 @@
 This is the code repository of MargNet. The necessary code for the paper is all included in this repository. 
 
 ## Method Introduction
-We construct a new deep learning method for DP tabular data synthesis. The detailed code of MargNet is in fold `method/MargDL`. This method applies an adaptive marginal selection framework, and apply it to deep neural networks. 
+We construct a new neural network-based method for DP tabular data synthesis. The detailed code of MargNet is in fold `method/MargDL`. This method applies an adaptive marginal selection framework and fits the selected marginals with neural networks. 
 
 
 ## Quick Start 
